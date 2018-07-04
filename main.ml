@@ -52,13 +52,12 @@ let () =
     Jwt.add_grant jwt "aud" "https://www.googleapis.com/oauth2/v4/token";
     Jwt.add_grant_int jwt "exp" (now + 3600);
     Jwt.add_grant_int jwt "iat" now;
-    Printf.printf "%s\n" (Jwt.dump ~pretty:true jwt);
-    Printf.printf "%s\n" (match Jwt.get_grant jwt "iss" with Some s -> s | None -> "<None>");
+    Printf.printf "%s\n" @@ Jwt.dump ~pretty:true jwt;
+    Printf.printf "%s\n" (Jwt.get_grant jwt "iss" |> function Some s -> s | None -> "<None>");
     Printf.printf "%d\n" @@ Jwt.get_grant_int jwt "iat";
     let jwt_encoded = Jwt.encode jwt in
     Printf.printf "\n\nEncoded:\n%s\n" jwt_encoded; 
-    let jwt_decoded = Jwt.decode jwt_encoded ~key:public_key in
-    Printf.printf "DECODED JWT: %s\n" (Jwt.dump ~pretty:true jwt_decoded)
+    Printf.printf "DECODED JWT: %s\n" (Jwt.dump ~pretty:true @@ Jwt.decode jwt_encoded ~key:public_key)
   end;
   Gc.full_major ();
   Printf.printf "DONE!\n"

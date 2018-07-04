@@ -4,12 +4,12 @@
  ((name jwt)
   (modules jwt)
   (c_names (jwt_stubs))
-  (c_flags (-I ../../include))
-  (c_library_flags (-L../../lib -ljwt))
+  (c_library_flags (-ljwt))
   (libraries (base unix))))
 
 (executable
  ((name main)
+  (public_name test_libjwt)
   (modules main)
   (libraries (base jwt lwt cohttp cohttp-lwt cohttp-lwt-unix uri tls))))
 
