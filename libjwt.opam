@@ -1,0 +1,13 @@
+opam-version: "1.2"
+maintainer: "Team Raccoons <racoon@issuu.com>"
+author: "Team Raccoon"
+homepage: "https://github.com/issuu/ocaml-libjwt"
+dev-repo: "git@github.com:issuu/ocaml-libjwt.git"
+bug-reports: "https://github.com/issuu/ocaml-libjwt/issues"
+build: [["jbuilder" "build" "-p" name "-j" jobs]]
+depends: [
+  "jbuilder" {build}
+  "base"
+  "ctypes"
+  "ctypes-foreign"
+]

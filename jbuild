@@ -1,0 +1,15 @@
+(jbuild_version 1)
+
+(library
+ ((name jwt)
+  (modules jwt)
+  (c_names (jwt_stubs))
+  (c_flags (-I ../../include))
+  (c_library_flags (-L../../lib -ljwt))
+  (libraries (base unix))))
+
+(executable
+ ((name main)
+  (modules main)
+  (libraries (base jwt lwt cohttp cohttp-lwt cohttp-lwt-unix uri tls))))
+
