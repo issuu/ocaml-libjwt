@@ -7,8 +7,7 @@ This is bindings for [libjwt](https://github.com/benmcollins/libjwt)
 Setup opam switch (this requires OPAM2) and install dependencies:
 ```
 brew install libjwt
-opam switch create ./ 4.06.1
-opam pin add ocaml-libjwt .
+opam switch create ./ ocaml-base-compiler.4.06.1
 ```
 
-Now you can build and run the test program with with `jbuilder exec test_libjwt`
+Now you can build and run the test program with with `make test`

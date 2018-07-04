@@ -8,6 +8,10 @@ build: [["jbuilder" "build" "-p" name "-j" jobs]]
 depends: [
   "jbuilder" {build}
   "base"
-  "ctypes"
-  "ctypes-foreign"
+  "lwt" {test}
+  "cohttp-lwt-unix" {test}
+  "cohttp-lwt" {test}
+  "cohttp" {test}
+  "tls" {test}
+  "uri" {test}
 ]

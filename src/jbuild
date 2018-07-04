@@ -1,0 +1,5 @@
+(library
+ ((name jwt)
+  (c_names (jwt_stubs))
+  (c_library_flags (-ljwt))
+  (libraries (base unix))))
