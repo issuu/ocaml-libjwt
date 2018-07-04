@@ -43,47 +43,36 @@ VQIDAQAB
 
 let () =
   begin
-    match Jwt.create () with
-    | `Ok o ->
-        let () =
-          match Jwt.set_alg o JWT_ALG_RS256 ~key:private_key with
-          | `Ok -> ()
-          | `Error x -> Printf.printf "Error %d\n" x
-        in
-        let now = Unix.time () |> int_of_float in
-        Printf.printf "NOW: %d\n" now;
-        ignore @@ Jwt.add_grant o "iss" "https://www.googleapis.com/robot/v1/metadata/x509/recommendation-tracking%40recommendation-tracking.iam.gserviceaccount.com";
-        ignore @@ Jwt.add_grant o "scope" "https://www.googleapis.com/auth/prediction";
-        ignore @@ Jwt.add_grant o "aud" "https://www.googleapis.com/oauth2/v4/token";
-        ignore @@ Jwt.add_grant_int o "exp" (now + 3600);
-        ignore @@ Jwt.add_grant_int o "iat" now;
-        Printf.printf "%s\n" (Jwt.dump ~pretty:true o);
-        Printf.printf "%s\n" (match Jwt.get_grant o "iss" with Some s -> s | None -> "<None>");
-        Printf.printf "%d\n" @@ Jwt.get_grant_int o "iat";
-        let jwt_encoded = match Jwt.encode o with `Ok s -> s | _ -> "<Error>" in
-        Printf.printf "\n\nEncoded:\n%s\n" jwt_encoded; 
-        let jwt_decoded =
-          match Jwt.decode jwt_encoded ~key:public_key with
-          | `Ok jwt -> jwt
-          | `Error n -> failwith (Printf.sprintf "ERROR WHILE DECODING: %d\n" n)
-        in
-        Printf.printf "DECODED JWT: %s\n" (Jwt.dump ~pretty:true jwt_decoded)
-    | `Error n -> Printf.printf "ERROR WHILE CREATING: %d\n" n
+    let jwt = Jwt.create () in
+    let now = Unix.time () |> int_of_float in
+    Printf.printf "NOW: %d\n" now;
+    Jwt.set_alg jwt JWT_ALG_RS256 ~key:private_key;
+    Jwt.add_grant jwt "iss" "https://www.googleapis.com/robot/v1/metadata/x509/recommendation-tracking%40recommendation-tracking.iam.gserviceaccount.com";
+    Jwt.add_grant jwt "scope" "https://www.googleapis.com/auth/prediction";
+    Jwt.add_grant jwt "aud" "https://www.googleapis.com/oauth2/v4/token";
+    Jwt.add_grant_int jwt "exp" (now + 3600);
+    Jwt.add_grant_int jwt "iat" now;
+    Printf.printf "%s\n" (Jwt.dump ~pretty:true jwt);
+    Printf.printf "%s\n" (match Jwt.get_grant jwt "iss" with Some s -> s | None -> "<None>");
+    Printf.printf "%d\n" @@ Jwt.get_grant_int jwt "iat";
+    let jwt_encoded = Jwt.encode jwt in
+    Printf.printf "\n\nEncoded:\n%s\n" jwt_encoded; 
+    let jwt_decoded = Jwt.decode jwt_encoded ~key:public_key in
+    Printf.printf "DECODED JWT: %s\n" (Jwt.dump ~pretty:true jwt_decoded)
   end;
   Gc.full_major ();
   Printf.printf "DONE!\n"
 
-
 let create_google_auth_payload ~key ~client_id =
     let now = Unix.time () |> int_of_float in
-    let jwt = Jwt.create () |> function `Ok jwt -> jwt | `Error err -> failwith (Printf.sprintf "Error creating jwt: %d" err) in
-    Jwt.set_alg jwt JWT_ALG_RS256 ~key |> ignore;
-    Jwt.add_grant jwt "aud" "https://www.googleapis.com/oauth2/v4/token" |> ignore;
-    Jwt.add_grant jwt "iss" client_id |> ignore;
-    Jwt.add_grant jwt "scope" "https://www.googleapis.com/auth/cloud-platform" |> ignore;
-    Jwt.add_grant_int jwt "exp" (now + 36) |> ignore;
-    Jwt.add_grant_int jwt "iat" now |> ignore;
-    Jwt.encode jwt |> function `Ok s -> s | `Error -> failwith (Printf.sprintf "Error encoding jwt")
+    let jwt = Jwt.create () in
+    Jwt.set_alg jwt JWT_ALG_RS256 ~key;
+    Jwt.add_grant jwt "aud" "https://www.googleapis.com/oauth2/v4/token";
+    Jwt.add_grant jwt "iss" client_id;
+    Jwt.add_grant jwt "scope" "https://www.googleapis.com/auth/cloud-platform";
+    Jwt.add_grant_int jwt "exp" (now + 36);
+    Jwt.add_grant_int jwt "iat" now;
+    Jwt.encode jwt
 
 let authenticate_with_google ~private_key ~client_email =
   let assertion = create_google_auth_payload ~key:private_key ~client_id:client_email in
@@ -99,6 +88,7 @@ let authenticate_with_google ~private_key ~client_email =
   rsp_body |> Cohttp_lwt.Body.to_string >|= fun body ->
   Printf.printf "Body of length: %d\n" (String.length body);
   Printf.printf "Body: %s\n" body
+
 (*
 let () =
   Lwt_main.run (authenticate_with_google

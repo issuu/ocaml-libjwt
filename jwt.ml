@@ -1,4 +1,7 @@
 type t
+exception Jwt_error of string * int
+
+let () = Callback.register_exception "jwt exception" (Jwt_error ("<function name>", -1))
 
 type jwt_alg =
   | JWT_ALG_NONE
@@ -13,15 +16,18 @@ type jwt_alg =
   | JWT_ALG_ES512 
   | JWT_ALG_TERM
 
-external create: unit -> [`Ok of t | `Error of int] = "ocaml_jwt_create"
-external decode: ?key: string -> string -> [ `Ok of t | `Error of int ] = "ocaml_jwt_decode"
+external create: unit -> t = "ocaml_jwt_create"
+external decode: ?key: string -> string -> t = "ocaml_jwt_decode"
 external dump: ?pretty:bool -> t -> string = "ocaml_jwt_dump"
-external add_grant: t -> string -> string -> [`Ok | `Error of int] = "ocaml_jwt_add_grant"
-external add_grant_int: t -> string -> int -> [`Ok | `Error of int] = "ocaml_jwt_add_grant_int"
-external add_grant_bool: t -> string -> bool -> [`Ok | `Error of int] = "ocaml_jwt_add_grant_bool"
+external add_grant: t -> string -> string -> unit = "ocaml_jwt_add_grant"
+external add_grant_int: t -> string -> int -> unit = "ocaml_jwt_add_grant_int"
+external add_grant_bool: t -> string -> bool -> unit = "ocaml_jwt_add_grant_bool"
+
 external get_grant : t -> string -> string option = "ocaml_jwt_get_grant"
 external get_grant_int : t -> string -> int = "ocaml_jwt_get_grant_int"
 external get_grant_bool : t -> string -> bool = "ocaml_jwt_get_grant_bool"
-external encode : t -> [`Ok of string | `Error ] = "ocaml_jwt_encode"
-external set_alg : ?key: string -> t -> jwt_alg -> [`Ok | `Error of int] = "ocaml_jwt_set_alg"
+
+external encode : t -> string = "ocaml_jwt_encode"
+
+external set_alg : ?key: string -> t -> jwt_alg -> unit = "ocaml_jwt_set_alg"
 
