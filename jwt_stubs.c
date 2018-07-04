@@ -1,14 +1,15 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
+#include <caml/custom.h>
 #include <jwt.h>
-#include <stdio.h>
+#include <string.h>
 
 #define RESULT_OR_ERROR(RESULT, VALUE, ERR)                 \
     ({ if (ERR == 0) {                                      \
         RESULT = alloc(2, 0);                               \
         Store_field(RESULT, 0, hash_variant("Ok"));         \
-        Store_field(result, 1, (value)(VALUE));             \
+        Store_field(result, 1, VALUE);                      \
     } else {                                                \
         result = alloc(2, 0);                               \
         Store_field(RESULT, 0, hash_variant("Error"));      \
@@ -26,18 +27,65 @@
 
 #define Val_none Val_int(0)
 
+// ========= custom block wrapping *jwt_t so OCaml GC can manage it ==========
+jwt_t* unwrap_ocaml_jwt(value ml_t) {
+    return *(jwt_t**)Data_custom_val(ml_t);
+}
+
+void finalize_ocaml_jwt(value ml_t) {
+    CAMLparam1(ml_t);
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+    // printf("FREEE!! %lx\n", (long)t);
+    jwt_free(t);
+    CAMLreturn0;
+}
+
+static struct custom_operations ocaml_jwt_custom_ops = {
+    .identifier = "ocaml_jwt handling",
+    .finalize = finalize_ocaml_jwt,
+    .compare = custom_compare_default,
+    .hash = custom_hash_default,
+    .serialize = custom_serialize_default,
+    .deserialize = custom_deserialize_default
+};
+
+value wrap_ocaml_jwt(jwt_t *t) {
+    // printf("allocated: %lx\n", (long)t);
+    value ml_t = caml_alloc_custom(&ocaml_jwt_custom_ops, sizeof(t), 0, 1);
+    memcpy(Data_custom_val(ml_t), &t, sizeof(t));
+    return ml_t;
+}
+// ===========================================================================
+
 CAMLprim value ocaml_jwt_create() {
     CAMLparam0();
-    CAMLlocal1(result);
+    CAMLlocal2(result, ml_t);
+
     jwt_t *t;
     int err_code = jwt_new(&t);
-    RESULT_OR_ERROR(result, t, err_code);
+    ml_t = wrap_ocaml_jwt(t);
+
+    RESULT_OR_ERROR(result, ml_t, err_code);
+    CAMLreturn(result);
+}
+
+CAMLprim value ocaml_jwt_dump(value pretty, value ml_t) {
+    CAMLparam2(pretty, ml_t);
+    CAMLlocal1(result);
+
+    int pretty_ = pretty == Val_none ? 0 : Bool_val(Field(pretty, 0));
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+
+    char *s = jwt_dump_str(t, pretty_);
+    result = caml_copy_string(s);
+    free(s);
+
     CAMLreturn(result);
 }
 
 CAMLprim value ocaml_jwt_decode(value key, value token) {
     CAMLparam2(key, token);
-    CAMLlocal1(result);
+    CAMLlocal2(result, ml_t);
 
     unsigned char* key_ptr = NULL;
     int key_len = 0;
@@ -49,49 +97,53 @@ CAMLprim value ocaml_jwt_decode(value key, value token) {
 
     jwt_t *t;
     int err_code = jwt_decode(&t, String_val(token), key_ptr, key_len);
-    RESULT_OR_ERROR(result, t, err_code);
+    ml_t = wrap_ocaml_jwt(t);
+
+    RESULT_OR_ERROR(result, ml_t, err_code);
     CAMLreturn(result);
 }
 
-CAMLprim value ocaml_jwt_dump(value pretty, value t) {
-    CAMLparam2(pretty, t);
+CAMLprim value ocaml_jwt_add_grant(value ml_t, value key, value val) {
+    CAMLparam3(ml_t, key, val);
     CAMLlocal1(result);
-    int pretty_ = pretty == Val_none ? 0 : Bool_val(Field(pretty, 0));
-    char *s = jwt_dump_str((jwt_t*)t, pretty_);
-    result = caml_copy_string(s);
-    free(s);
-    CAMLreturn(result);
-}
 
-CAMLprim value ocaml_jwt_add_grant(value t, value key, value val) {
-    CAMLparam3(t, key, val);
-    CAMLlocal1(result);
-    int err_code = jwt_add_grant((jwt_t*)t, String_val(key), String_val(val));
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+    int err_code = jwt_add_grant(t, String_val(key), String_val(val));
+
     OK_OR_ERROR(result, err_code);
     CAMLreturn(result);
 
 }
 
-CAMLprim value ocaml_jwt_add_grant_int(value t, value key, value val) {
-    CAMLparam3(t, key, val);
+CAMLprim value ocaml_jwt_add_grant_int(value ml_t, value key, value val) {
+    CAMLparam3(ml_t, key, val);
     CAMLlocal1(result);
-    int err_code = jwt_add_grant_int((jwt_t*)t, String_val(key), Long_val(val));
+
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+    int err_code = jwt_add_grant_int(t, String_val(key), Long_val(val));
+
     OK_OR_ERROR(result, err_code);
     CAMLreturn(result);
 }
 
-CAMLprim value ocaml_jwt_add_grant_bool(value t, value key, value val) {
-    CAMLparam3(t, key, val);
+CAMLprim value ocaml_jwt_add_grant_bool(value ml_t, value key, value val) {
+    CAMLparam3(ml_t, key, val);
     CAMLlocal1(result);
-    int err_code = jwt_add_grant_bool((jwt_t*)t, String_val(key), Bool_val(val));
+
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+    int err_code = jwt_add_grant_bool(t, String_val(key), Bool_val(val));
+
     OK_OR_ERROR(result, err_code);
     CAMLreturn(result);
 }
 
-CAMLprim value ocaml_jwt_get_grant(value t, value key) {
-    CAMLparam2(t, key);
+CAMLprim value ocaml_jwt_get_grant(value ml_t, value key) {
+    CAMLparam2(ml_t, key);
     CAMLlocal1(result);
-    const char *s = jwt_get_grant((jwt_t*)t, String_val(key));
+
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+    const char *s = jwt_get_grant(t, String_val(key));
+
     if (s == NULL) {
         result = Val_none;
     } else {
@@ -101,25 +153,41 @@ CAMLprim value ocaml_jwt_get_grant(value t, value key) {
     CAMLreturn(result);
 }
 
-CAMLprim value ocaml_jwt_get_grant_int(value t, value key) {
-    CAMLparam2(t, key);
+CAMLprim value ocaml_jwt_get_grant_int(value ml_t, value key) {
+    CAMLparam2(ml_t, key);
     CAMLlocal1(result);
-    long i = jwt_get_grant_int((jwt_t*)t, String_val(key));
+
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+    long i = jwt_get_grant_int(t, String_val(key));
+
     result = Val_long(i);
     CAMLreturn(result);
 }
 
-CAMLprim value ocaml_jwt_get_grant_bool(value t, value key) {
-    CAMLparam2(t, key);
+CAMLprim value ocaml_jwt_get_grant_bool(value ml_t, value key) {
+    CAMLparam2(ml_t, key);
     CAMLlocal1(result);
-    int i = jwt_get_grant_int((jwt_t*)t, String_val(key));
+
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+    int i = jwt_get_grant_int(t, String_val(key));
+
     result = Val_bool(i);
     CAMLreturn(result);
 }
 
-CAMLprim value ocaml_jwt_set_alg(value key, value t, value alg) {
-    CAMLparam3(key, alg, t);
+CAMLprim value ocaml_jwt_set_alg(value key, value ml_t, value alg) {
+    CAMLparam3(key, ml_t, alg);
     CAMLlocal1(result);
+
+    unsigned char* key_ptr = NULL;
+    int key_len = 0;
+    if (key != Val_none) {
+        value field = Field(key, 0);
+        key_ptr = (unsigned char*)String_val(field);
+        key_len = string_length(field);
+    }
+
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
 
     jwt_alg_t alg_type;
     switch (Int_val(alg)) {
@@ -136,24 +204,19 @@ CAMLprim value ocaml_jwt_set_alg(value key, value t, value alg) {
         case 10: alg_type = JWT_ALG_TERM; break;
     }
 
-    unsigned char* key_ptr = NULL;
-    int key_len = 0;
-    if (key != Val_none) {
-        value field = Field(key, 0);
-        key_ptr = (unsigned char*)String_val(field);
-        key_len = string_length(field);
-    }
-
-    int err_code = jwt_set_alg((jwt_t*)t, alg_type, key_ptr, key_len);
+    int err_code = jwt_set_alg(t, alg_type, key_ptr, key_len);
 
     OK_OR_ERROR(result, err_code);
     CAMLreturn(result);
 }
 
-CAMLprim value ocaml_jwt_encode(value t) {
-    CAMLparam1(t);
+CAMLprim value ocaml_jwt_encode(value ml_t) {
+    CAMLparam1(ml_t);
     CAMLlocal1(result);
-    char *s = jwt_encode_str((jwt_t*)t);
+
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+    char *s = jwt_encode_str(t);
+
     if (s != NULL) {
         result = alloc(2, 0);
         Store_field(result, 0, hash_variant("Ok"));
@@ -164,5 +227,3 @@ CAMLprim value ocaml_jwt_encode(value t) {
     }
     CAMLreturn(result);
 }
-
-

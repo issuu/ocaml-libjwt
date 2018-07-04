@@ -35,6 +35,4 @@ type jwt_alg =
   | JWT_ALG_TERM
 
 val set_alg : ?key: string -> t -> jwt_alg -> [`Ok | `Error of int]
-(*
-val get_alg : t -> jwt_alg
-*)
+(* val get_alg : t -> jwt_alg *)

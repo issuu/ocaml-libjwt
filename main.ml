@@ -42,32 +42,37 @@ VQIDAQAB
 -----END PUBLIC KEY-----"
 
 let () =
-  match Jwt.create () with
-  | `Ok o ->
-      let () =
-        match Jwt.set_alg o JWT_ALG_RS256 ~key:private_key with
-        | `Ok -> ()
-        | `Error x -> Printf.printf "Error %d\n" x
-      in
-      let now = Unix.time () |> int_of_float in
-      Printf.printf "NOW: %d\n" now;
-      ignore @@ Jwt.add_grant o "iss" "https://www.googleapis.com/robot/v1/metadata/x509/recommendation-tracking%40recommendation-tracking.iam.gserviceaccount.com";
-      ignore @@ Jwt.add_grant o "scope" "https://www.googleapis.com/auth/prediction";
-      ignore @@ Jwt.add_grant o "aud" "https://www.googleapis.com/oauth2/v4/token";
-      ignore @@ Jwt.add_grant_int o "exp" (now + 3600);
-      ignore @@ Jwt.add_grant_int o "iat" now;
-      Printf.printf "%s\n" (Jwt.dump ~pretty:true o);
-      Printf.printf "%s\n" (match Jwt.get_grant o "iss" with Some s -> s | None -> "<None>");
-      Printf.printf "%d\n" @@ Jwt.get_grant_int o "iat";
-      let jwt_encoded = match Jwt.encode o with `Ok s -> s | _ -> "<Error>" in
-      Printf.printf "\n\nEncoded:\n%s\n" jwt_encoded; 
-      let jwt_decoded =
-        match Jwt.decode jwt_encoded ~key:public_key with
-        | `Ok jwt -> jwt
-        | `Error n -> failwith (Printf.sprintf "ERROR WHILE DECODING: %d\n" n)
-      in
-      Printf.printf "DECODED JWT: %s\n" (Jwt.dump ~pretty:true jwt_decoded)
-  | `Error n -> Printf.printf "ERROR WHILE CREATING: %d\n" n
+  begin
+    match Jwt.create () with
+    | `Ok o ->
+        let () =
+          match Jwt.set_alg o JWT_ALG_RS256 ~key:private_key with
+          | `Ok -> ()
+          | `Error x -> Printf.printf "Error %d\n" x
+        in
+        let now = Unix.time () |> int_of_float in
+        Printf.printf "NOW: %d\n" now;
+        ignore @@ Jwt.add_grant o "iss" "https://www.googleapis.com/robot/v1/metadata/x509/recommendation-tracking%40recommendation-tracking.iam.gserviceaccount.com";
+        ignore @@ Jwt.add_grant o "scope" "https://www.googleapis.com/auth/prediction";
+        ignore @@ Jwt.add_grant o "aud" "https://www.googleapis.com/oauth2/v4/token";
+        ignore @@ Jwt.add_grant_int o "exp" (now + 3600);
+        ignore @@ Jwt.add_grant_int o "iat" now;
+        Printf.printf "%s\n" (Jwt.dump ~pretty:true o);
+        Printf.printf "%s\n" (match Jwt.get_grant o "iss" with Some s -> s | None -> "<None>");
+        Printf.printf "%d\n" @@ Jwt.get_grant_int o "iat";
+        let jwt_encoded = match Jwt.encode o with `Ok s -> s | _ -> "<Error>" in
+        Printf.printf "\n\nEncoded:\n%s\n" jwt_encoded; 
+        let jwt_decoded =
+          match Jwt.decode jwt_encoded ~key:public_key with
+          | `Ok jwt -> jwt
+          | `Error n -> failwith (Printf.sprintf "ERROR WHILE DECODING: %d\n" n)
+        in
+        Printf.printf "DECODED JWT: %s\n" (Jwt.dump ~pretty:true jwt_decoded)
+    | `Error n -> Printf.printf "ERROR WHILE CREATING: %d\n" n
+  end;
+  Gc.full_major ();
+  Printf.printf "DONE!\n"
+
 
 let create_google_auth_payload ~key ~client_id =
     let now = Unix.time () |> int_of_float in
@@ -94,11 +99,11 @@ let authenticate_with_google ~private_key ~client_email =
   rsp_body |> Cohttp_lwt.Body.to_string >|= fun body ->
   Printf.printf "Body of length: %d\n" (String.length body);
   Printf.printf "Body: %s\n" body
-
+(*
 let () =
   Lwt_main.run (authenticate_with_google
     ~private_key:"-----BEGIN PRIVATE KEY-----\n[INSERT REAL KEY HERE]\n-----END PRIVATE KEY-----"
     ~client_email:"[INSERT REAL CLIENT EMAIL HERE")
   |> fun hest ->
       ignore hest
-
+*)
