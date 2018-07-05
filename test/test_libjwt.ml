@@ -1,4 +1,4 @@
-open Lwt
+open Lwt.Infix
 open Cohttp
 open Cohttp_lwt_unix
 
@@ -42,36 +42,34 @@ VQIDAQAB
 -----END PUBLIC KEY-----"
 
 let () =
-  begin
-    let jwt = Jwt.create () in
-    let now = Unix.time () |> int_of_float in
-    Printf.printf "NOW: %d\n" now;
-    Jwt.set_alg jwt JWT_ALG_RS256 ~key:private_key;
-    Jwt.add_grant jwt "iss" "https://www.googleapis.com/robot/v1/metadata/x509/recommendation-tracking%40recommendation-tracking.iam.gserviceaccount.com";
-    Jwt.add_grant jwt "scope" "https://www.googleapis.com/auth/prediction";
-    Jwt.add_grant jwt "aud" "https://www.googleapis.com/oauth2/v4/token";
-    Jwt.add_grant_int jwt "exp" (now + 3600);
-    Jwt.add_grant_int jwt "iat" now;
-    Printf.printf "%s\n" @@ Jwt.dump ~pretty:true jwt;
-    Printf.printf "%s\n" (Jwt.get_grant jwt "iss" |> function Some s -> s | None -> "<None>");
-    Printf.printf "%d\n" @@ Jwt.get_grant_int jwt "iat";
-    let jwt_encoded = Jwt.encode jwt in
-    Printf.printf "\n\nEncoded:\n%s\n" jwt_encoded; 
-    Printf.printf "DECODED JWT: %s\n" (Jwt.dump ~pretty:true @@ Jwt.decode jwt_encoded ~key:public_key)
-  end;
+  let jwt = Jwt.create () in
+  let now = Unix.time () |> int_of_float in
+  Printf.printf "NOW: %d\n" now;
+  Jwt.set_alg jwt RS256 ~key:private_key;
+  Jwt.add_grant jwt "iss" "https://www.googleapis.com/robot/v1/metadata/x509/recommendation-tracking%40recommendation-tracking.iam.gserviceaccount.com";
+  Jwt.add_grant jwt "scope" "https://www.googleapis.com/auth/prediction";
+  Jwt.add_grant jwt "aud" "https://www.googleapis.com/oauth2/v4/token";
+  Jwt.add_grant_int jwt "exp" (now + 3600);
+  Jwt.add_grant_int jwt "iat" now;
+  Printf.printf "%s\n" @@ Jwt.dump ~pretty:true jwt;
+  Printf.printf "%s\n" (Jwt.get_grant jwt "iss" |> function Some s -> s | None -> "<None>");
+  Printf.printf "%d\n" @@ Jwt.get_grant_int jwt "iat";
+  let jwt_encoded = Jwt.encode jwt in
+  Printf.printf "\n\nEncoded:\n%s\n" jwt_encoded;
+  Printf.printf "DECODED JWT: %s\n" (Jwt.dump ~pretty:true @@ Jwt.decode jwt_encoded ~key:public_key);
   Gc.full_major ();
   Printf.printf "DONE!\n"
 
 let create_google_auth_payload ~key ~client_id =
-    let now = Unix.time () |> int_of_float in
-    let jwt = Jwt.create () in
-    Jwt.set_alg jwt JWT_ALG_RS256 ~key;
-    Jwt.add_grant jwt "aud" "https://www.googleapis.com/oauth2/v4/token";
-    Jwt.add_grant jwt "iss" client_id;
-    Jwt.add_grant jwt "scope" "https://www.googleapis.com/auth/cloud-platform";
-    Jwt.add_grant_int jwt "exp" (now + 36);
-    Jwt.add_grant_int jwt "iat" now;
-    Jwt.encode jwt
+  let now = Unix.time () |> int_of_float in
+  let jwt = Jwt.create () in
+  Jwt.set_alg jwt RS256 ~key;
+  Jwt.add_grant jwt "aud" "https://www.googleapis.com/oauth2/v4/token";
+  Jwt.add_grant jwt "iss" client_id;
+  Jwt.add_grant jwt "scope" "https://www.googleapis.com/auth/cloud-platform";
+  Jwt.add_grant_int jwt "exp" (now + 36);
+  Jwt.add_grant_int jwt "iat" now;
+  Jwt.encode jwt
 
 let authenticate_with_google ~private_key ~client_email =
   let assertion = create_google_auth_payload ~key:private_key ~client_id:client_email in

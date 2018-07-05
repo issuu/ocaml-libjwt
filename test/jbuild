@@ -1,0 +1,8 @@
+(executable
+ ((name test_libjwt)
+  (libraries (base jwt lwt cohttp cohttp-lwt cohttp-lwt-unix uri tls))))
+
+(alias
+ ((name runtest)
+  (deps (test_libjwt.exe))
+  (action (run ${<}))))

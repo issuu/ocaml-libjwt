@@ -1,4 +1,3 @@
-
 type t
 
 exception Jwt_error of string * int
@@ -23,18 +22,18 @@ val del_grant : t -> string -> [ `Ok | `Error of int ]
 val dump : ?pretty: bool -> t -> string
 val encode : t -> string
 
-type jwt_alg =
-  | JWT_ALG_NONE
-  | JWT_ALG_HS256
-  | JWT_ALG_HS384 
-  | JWT_ALG_HS512 
-  | JWT_ALG_RS256 
-  | JWT_ALG_RS384 
-  | JWT_ALG_RS512 
-  | JWT_ALG_ES256 
-  | JWT_ALG_ES384 
-  | JWT_ALG_ES512 
-  | JWT_ALG_TERM
+type algorithm =
+  | NONE
+  | HS256
+  | HS384
+  | HS512
+  | RS256
+  | RS384
+  | RS512
+  | ES256
+  | ES384
+  | ES512
+  | TERM
 
-val set_alg : ?key: string -> t -> jwt_alg -> unit
+val set_alg : ?key: string -> t -> algorithm -> unit
 (* val get_alg : t -> jwt_alg *)
