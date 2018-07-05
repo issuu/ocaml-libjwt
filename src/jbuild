@@ -2,5 +2,6 @@
  ((name jwt)
   (public_name libjwt)
   (c_names (jwt_stubs))
+  (c_flags (-MJjwt_stubs.o.json))
   (c_library_flags (-ljwt))
   (libraries (base unix))))
