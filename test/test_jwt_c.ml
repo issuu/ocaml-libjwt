@@ -1,6 +1,4 @@
-open Lwt.Infix
-open Cohttp
-open Cohttp_lwt_unix
+module Jwt = Jwt_c
 
 (* the key is just something I generated with `openssl genrsa -out private.pem 2048` *)
 let private_key = "-----BEGIN RSA PRIVATE KEY-----
@@ -71,6 +69,7 @@ let create_google_auth_payload ~key ~client_id =
   Jwt.add_grant_int jwt "iat" now;
   Jwt.encode jwt
 
+(*
 let authenticate_with_google ~private_key ~client_email =
   let assertion = create_google_auth_payload ~key:private_key ~client_id:client_email in
   let headers = Header.init_with "content-type" "application/x-www-form-urlencoded" in
@@ -86,7 +85,6 @@ let authenticate_with_google ~private_key ~client_email =
   Printf.printf "Body of length: %d\n" (String.length body);
   Printf.printf "Body: %s\n" body
 
-(*
 let () =
   Lwt_main.run (authenticate_with_google
     ~private_key:"-----BEGIN PRIVATE KEY-----\n[INSERT REAL KEY HERE]\n-----END PRIVATE KEY-----"

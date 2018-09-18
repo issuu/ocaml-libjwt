@@ -6,11 +6,10 @@ dev-repo: "git@github.com:issuu/ocaml-libjwt.git"
 bug-reports: "https://github.com/issuu/ocaml-libjwt/issues"
 build: [["jbuilder" "build" "-p" name "-j" jobs]]
 depends: [
-  "jbuilder" {build}
-  "base"
-  "lwt" {test}
-  "cohttp-lwt-unix" {test}
-  "cohttp-lwt" {test}
+  "dune" {build}
+  "async" {test}
+  "cohttp-async-unix" {test}
+  "cohttp-async" {test}
   "cohttp" {test}
   "tls" {test}
   "uri" {test}

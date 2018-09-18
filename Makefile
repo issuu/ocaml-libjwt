@@ -1,14 +1,14 @@
 .PHONY: all
 all:
-	jbuilder build --dev
+	dune build
 
 .PHONY: test
 test:
-	jbuilder runtest --force
+	dune runtest --force
 
 .PHONY: clean
 clean:
-	jbuilder clean
+	dune clean
 
 compile_commands.json:
 	sed -e '1s/^/[\n/' -e '$$s/,$$/\n]/' _build/default/src/*.o.json | jq -c '.|map(.directory=(.directory|sub("_build/default/";"")))' > $@
