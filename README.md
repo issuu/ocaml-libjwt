@@ -1,13 +1,9 @@
-# OCaml Bindings for libjwt
+# Jwt_c
 
-This is bindings for [libjwt](https://github.com/benmcollins/libjwt)
+[![Build Status](https://travis-ci.org/issuu/ocaml-libjwt.svg?branch=master)](https://travis-ci.org/issuu/ocaml-libjwt)
 
-## Development
+This is Ocaml bindings for [libjwt](https://github.com/benmcollins/libjwt)
 
-Setup opam switch (this requires OPAM2) and install dependencies:
-```
-brew install libjwt
-opam switch create ./ ocaml-base-compiler.4.06.1
-```
+## License
 
-Now you can build and run the test program with with `make test`
+Apache 2.0, see [LICENSE](LICENSE).

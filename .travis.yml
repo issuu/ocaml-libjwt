@@ -6,4 +6,4 @@ env:
   global:
     - TESTS=true
   matrix:
-    - OCAML_VERSION=4.06 PACKAGE="jwtc" PINS="jwtc:."
+    - OCAML_VERSION=4.06 PACKAGE="jwt_c" PINS="jwt_c:."
