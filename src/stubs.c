@@ -6,6 +6,7 @@
 #include <caml/callback.h>
 #include <jwt.h>
 #include <string.h>
+#include <errno.h>
 
 #define Val_none Val_int(0)
 
@@ -159,20 +160,36 @@ CAMLprim value ocaml_jwt_get_grant(value ml_t, value key) {
 
 CAMLprim value ocaml_jwt_get_grant_int(value ml_t, value key) {
     CAMLparam2(ml_t, key);
+    CAMLlocal1(result);
 
     jwt_t *t = unwrap_ocaml_jwt(ml_t);
     long i = jwt_get_grant_int(t, String_val(key));
 
-    CAMLreturn(Val_long(i));
+    if (i == 0 && errno == ENOENT) {
+        result = Val_none;
+    } else {
+        result = caml_alloc(1, 0);
+        Store_field(result, 0, Val_long(i));
+    }
+
+    CAMLreturn(result);
 }
 
 CAMLprim value ocaml_jwt_get_grant_bool(value ml_t, value key) {
     CAMLparam2(ml_t, key);
+    CAMLlocal1(result);
 
     jwt_t *t = unwrap_ocaml_jwt(ml_t);
-    int i = jwt_get_grant_int(t, String_val(key));
+    int i = jwt_get_grant_bool(t, String_val(key));
 
-    CAMLreturn(Val_bool(i));
+    if (i == 0 && errno == ENOENT) {
+        result = Val_none;
+    } else {
+        result = caml_alloc(1, 0);
+        Store_field(result, 0, Val_bool(i));
+    }
+
+    CAMLreturn(result);
 }
 
 CAMLprim value ocaml_jwt_get_grants_json(value key, value ml_t) {

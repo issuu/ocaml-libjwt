@@ -51,7 +51,7 @@ let () =
   Jwt.add_grant_int jwt "iat" now;
   Printf.printf "%s\n" @@ Jwt.dump ~pretty:true jwt;
   Printf.printf "%s\n" (Jwt.get_grant jwt "iss" |> function Some s -> s | None -> "<None>");
-  Printf.printf "%d\n" @@ Jwt.get_grant_int jwt "iat";
+  Printf.printf "%s\n" (Jwt.get_grant_int jwt "iat" |> function Some i -> string_of_int i | None -> "<None>");
   let jwt_encoded = Jwt.encode jwt in
   Printf.printf "\n\nEncoded:\n%s\n" jwt_encoded;
   Printf.printf "DECODED JWT: %s\n" (Jwt.dump ~pretty:true @@ Jwt.decode jwt_encoded ~key:public_key);

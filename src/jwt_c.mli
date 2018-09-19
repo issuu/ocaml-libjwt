@@ -6,9 +6,10 @@ val create : unit -> t
 val decode : ?key: string -> string -> t
 
 val get_grant : t -> string -> string option
-val get_grant_int : t -> string -> int
-val get_grant_bool : t -> string -> bool
+val get_grant_int : t -> string -> int option
+val get_grant_bool : t -> string -> bool option
 val get_grants_json : ?key: string -> t -> string option
+
 val add_grant : t -> string -> string -> unit
 val add_grant_int : t -> string -> int -> unit
 val add_grant_bool : t -> string -> bool -> unit
