@@ -39,62 +39,86 @@ hyNrgAKV677LD3fsU+lC+ea9ylt/KPoicOAQFZer1kqYcI+IeouG2ePJcPEH3xpH
 VQIDAQAB
 -----END PUBLIC KEY-----"
 
-let () =
+let get_set_grant_string () =
+  let jwt = Jwt.create () in
+  Alcotest.(check (option string)) "non-existing" None (Jwt.get_grant jwt "non-existing");
+  Jwt.add_grant jwt "abc" "efg";
+  Alcotest.(check (option string)) "existing" (Some "efg") (Jwt.get_grant jwt "abc");
+  Gc.full_major ()
+
+let get_set_grant_int () =
+  let jwt = Jwt.create () in
+  Alcotest.(check (option int)) "non-existing" None (Jwt.get_grant_int jwt "non-existing");
+  Jwt.add_grant_int jwt "n" 42;
+  Alcotest.(check (option int)) "existing" (Some 42) (Jwt.get_grant_int jwt "n");
+  Jwt.add_grant_int jwt "zero" 0;
+  Alcotest.(check (option int)) "zero" (Some 0) (Jwt.get_grant_int jwt "zero");
+  Gc.full_major ()
+
+let get_set_grant_bool () =
+  let jwt = Jwt.create () in
+  Alcotest.(check (option bool)) "non-existing" None (Jwt.get_grant_bool jwt "non-existing");
+  Jwt.add_grant_bool jwt "true" true;
+  Alcotest.(check (option bool)) "true" (Some true) (Jwt.get_grant_bool jwt "true");
+  Jwt.add_grant_bool jwt "false" false;
+  Alcotest.(check (option bool)) "false" (Some false) (Jwt.get_grant_bool jwt "false");
+  Gc.full_major ()
+
+let get_json () =
+  let jwt = Jwt.create () in
+  Jwt.add_grant jwt "abc" "efg";
+  Jwt.add_grant_int jwt "n" 42;
+  Jwt.add_grant_bool jwt "b" true;
+  Alcotest.(check (option string)) "json" (Some {json|{"abc":"efg","b":true,"n":42}|json}) (Jwt.get_grants_json jwt);
+  Alcotest.(check (option string)) "with key" (Some {json|"efg"|json}) (Jwt.get_grants_json ~key:"abc" jwt);
+  Alcotest.(check (option string)) "non-existing" None (Jwt.get_grants_json ~key:"non-existing" jwt);
+  Gc.full_major ()
+
+let set_json () =
+  let jwt = Jwt.create () in
+  Jwt.add_grants_json jwt {json|{"abc":"efg","b":true,"n":42}|json};
+  Alcotest.(check (option string)) "json" (Some {json|{"abc":"efg","b":true,"n":42}|json}) (Jwt.get_grants_json jwt);
+  Alcotest.(check (option string)) "get grant" (Some "efg") (Jwt.get_grant jwt "abc");
+  Gc.full_major ()
+
+let delete_grant () =
+  let jwt = Jwt.create () in
+  Jwt.add_grants_json jwt {json|{"abc":"efg","b":true,"n":42}|json};
+  Jwt.del_grant jwt "abc";
+  Alcotest.(check (option string)) "json" (Some {json|{"b":true,"n":42}|json}) (Jwt.get_grants_json jwt);
+  Gc.full_major ()
+
+let delete_all_grants () =
+  let jwt = Jwt.create () in
+  Jwt.add_grants_json jwt {json|{"abc":"efg","b":true,"n":42}|json};
+  Jwt.del_grants jwt;
+  Alcotest.(check (option string)) "json" (Some "{}") (Jwt.get_grants_json jwt);
+  Gc.full_major ()
+
+let decode_encode () =
   let jwt = Jwt.create () in
   let now = Unix.time () |> int_of_float in
-  Printf.printf "NOW: %d\n" now;
   Jwt.set_alg jwt RS256 ~key:private_key;
   Jwt.add_grant jwt "iss" "https://www.googleapis.com/robot/v1/metadata/x509/recommendation-tracking%40recommendation-tracking.iam.gserviceaccount.com";
   Jwt.add_grant jwt "scope" "https://www.googleapis.com/auth/prediction";
   Jwt.add_grant jwt "aud" "https://www.googleapis.com/oauth2/v4/token";
   Jwt.add_grant_int jwt "exp" (now + 3600);
   Jwt.add_grant_int jwt "iat" now;
-  Printf.printf "%s\n" @@ Jwt.dump ~pretty:true jwt;
-  Printf.printf "%s\n" (Jwt.get_grant jwt "iss" |> function Some s -> s | None -> "<None>");
-  Printf.printf "%s\n" (Jwt.get_grant_int jwt "iat" |> function Some i -> string_of_int i | None -> "<None>");
   let jwt_encoded = Jwt.encode jwt in
-  Printf.printf "\n\nEncoded:\n%s\n" jwt_encoded;
-  Printf.printf "DECODED JWT: %s\n" (Jwt.dump ~pretty:true @@ Jwt.decode jwt_encoded ~key:public_key);
-
-  Printf.printf "%s\n" ((Jwt.get_grants_json ~key:"scope" jwt) |> function Some s -> s | None -> "<None>");
-  Printf.printf "%s\n" ((Jwt.get_grants_json jwt) |> function Some s -> s | None -> "<None>");
-
-  Printf.printf "%b\n" @@ ((Jwt.get_alg jwt) = RS256);
-
-  Gc.full_major ();
-  Printf.printf "DONE!\n"
-
-let create_google_auth_payload ~key ~client_id =
-  let now = Unix.time () |> int_of_float in
-  let jwt = Jwt.create () in
-  Jwt.set_alg jwt RS256 ~key;
-  Jwt.add_grant jwt "aud" "https://www.googleapis.com/oauth2/v4/token";
-  Jwt.add_grant jwt "iss" client_id;
-  Jwt.add_grant jwt "scope" "https://www.googleapis.com/auth/cloud-platform";
-  Jwt.add_grant_int jwt "exp" (now + 36);
-  Jwt.add_grant_int jwt "iat" now;
-  Jwt.encode jwt
-
-(*
-let authenticate_with_google ~private_key ~client_email =
-  let assertion = create_google_auth_payload ~key:private_key ~client_id:client_email in
-  let headers = Header.init_with "content-type" "application/x-www-form-urlencoded" in
-  let body = Uri.encoded_of_query [
-    ("assertion", [assertion]);
-    ("grant_type", ["urn:ietf:params:oauth:grant-type:jwt-bearer"])
-  ] |> Cohttp_lwt.Body.of_string in
-  Client.post ~headers ~body (Uri.of_string "https://www.googleapis.com/oauth2/v4/token") >>= fun (rsp, rsp_body) ->
-  let code = rsp |> Response.status |> Code.code_of_status in
-  Printf.printf "Response code: %d\n" code;
-  Printf.printf "Response Headers: %s\n" (rsp |> Response.headers |> Header.to_string);
-  rsp_body |> Cohttp_lwt.Body.to_string >|= fun body ->
-  Printf.printf "Body of length: %d\n" (String.length body);
-  Printf.printf "Body: %s\n" body
+  let jwt_decoded = Jwt.decode jwt_encoded ~key:public_key in
+  Alcotest.(check (option string)) "json" (Jwt.get_grants_json jwt) (Jwt.get_grants_json jwt_decoded);
+  Gc.full_major ()
 
 let () =
-  Lwt_main.run (authenticate_with_google
-    ~private_key:"-----BEGIN PRIVATE KEY-----\n[INSERT REAL KEY HERE]\n-----END PRIVATE KEY-----"
-    ~client_email:"[INSERT REAL CLIENT EMAIL HERE")
-  |> fun hest ->
-      ignore hest
-*)
+  Alcotest.run "Jwt_C" [
+    "tests", [
+      "get/set grant (string)", `Quick, get_set_grant_string;
+      "get/set grant (int)", `Quick, get_set_grant_int;
+      "get/set grant (bool)", `Quick, get_set_grant_bool;
+      "get json", `Quick, get_json;
+      "set json", `Quick, set_json;
+      "delete grant", `Quick, delete_grant;
+      "delete all grants", `Quick, delete_all_grants;
+      "decode / encode", `Quick, decode_encode;
+    ]
+  ]

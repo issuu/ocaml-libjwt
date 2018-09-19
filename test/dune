@@ -1,6 +1,6 @@
 (executable
  (name test_jwt_c)
- (libraries jwt_c unix))
+ (libraries jwt_c alcotest))
 
 (alias
  (name runtest)

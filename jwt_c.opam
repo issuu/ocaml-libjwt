@@ -7,10 +7,5 @@ bug-reports: "https://github.com/issuu/ocaml-libjwt/issues"
 build: [["jbuilder" "build" "-p" name "-j" jobs]]
 depends: [
   "dune" {build}
-  "async" {test}
-  "cohttp-async-unix" {test}
-  "cohttp-async" {test}
-  "cohttp" {test}
-  "tls" {test}
-  "uri" {test}
+  "alcotest" {test}
 ]
