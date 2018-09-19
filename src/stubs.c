@@ -6,6 +6,7 @@
 #include <caml/callback.h>
 #include <jwt.h>
 #include <string.h>
+#include <errno.h>
 
 #define Val_none Val_int(0)
 
@@ -129,6 +130,18 @@ CAMLprim value ocaml_jwt_add_grant_bool(value ml_t, value key, value val) {
     CAMLreturn(Val_unit);
 }
 
+CAMLprim value ocaml_jwt_add_grants_json(value ml_t, value json) {
+    CAMLparam2(ml_t, json);
+
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+    int err_code = jwt_add_grants_json(t, String_val(json));
+
+    if (err_code != 0) {
+        ocaml_jwt_raise(__FUNCTION__, err_code);
+    }
+    CAMLreturn(Val_unit);
+}
+
 CAMLprim value ocaml_jwt_get_grant(value ml_t, value key) {
     CAMLparam2(ml_t, key);
     CAMLlocal1(result);
@@ -147,20 +160,60 @@ CAMLprim value ocaml_jwt_get_grant(value ml_t, value key) {
 
 CAMLprim value ocaml_jwt_get_grant_int(value ml_t, value key) {
     CAMLparam2(ml_t, key);
+    CAMLlocal1(result);
 
     jwt_t *t = unwrap_ocaml_jwt(ml_t);
     long i = jwt_get_grant_int(t, String_val(key));
 
-    CAMLreturn(Val_long(i));
+    if (i == 0 && errno == ENOENT) {
+        result = Val_none;
+    } else {
+        result = caml_alloc(1, 0);
+        Store_field(result, 0, Val_long(i));
+    }
+
+    CAMLreturn(result);
 }
 
 CAMLprim value ocaml_jwt_get_grant_bool(value ml_t, value key) {
     CAMLparam2(ml_t, key);
+    CAMLlocal1(result);
 
     jwt_t *t = unwrap_ocaml_jwt(ml_t);
-    int i = jwt_get_grant_int(t, String_val(key));
+    int i = jwt_get_grant_bool(t, String_val(key));
 
-    CAMLreturn(Val_bool(i));
+    if (i == 0 && errno == ENOENT) {
+        result = Val_none;
+    } else {
+        result = caml_alloc(1, 0);
+        Store_field(result, 0, Val_bool(i));
+    }
+
+    CAMLreturn(result);
+}
+
+CAMLprim value ocaml_jwt_get_grants_json(value key, value ml_t) {
+    CAMLparam2(ml_t, key);
+    CAMLlocal1(result);
+
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+    char *s;
+
+    if (key == Val_none) {
+        s = jwt_get_grants_json(t, NULL);
+    } else {
+        value field = Field(key, 0);
+        s = jwt_get_grants_json(t, String_val(field));
+    }
+
+    if (s == NULL) {
+        result = Val_none;
+    } else {
+        result = caml_alloc(1, 0);
+        Store_field(result, 0, caml_copy_string(s));
+        free(s);
+    }
+    CAMLreturn(result);
 }
 
 CAMLprim value ocaml_jwt_set_alg(value key, value ml_t, value alg) {
@@ -193,6 +246,52 @@ CAMLprim value ocaml_jwt_set_alg(value key, value ml_t, value alg) {
     }
 
     int err_code = jwt_set_alg(t, alg_type, key_ptr, key_len);
+    if (err_code != 0) {
+        ocaml_jwt_raise(__FUNCTION__, err_code);
+    }
+    CAMLreturn(Val_unit);
+}
+
+CAMLprim value ocaml_jwt_get_alg(value ml_t) {
+    CAMLparam1(ml_t);
+    CAMLlocal1(result);
+
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+    switch (jwt_get_alg(t)) {
+        case JWT_ALG_NONE: result = Val_int(0); break;
+        case JWT_ALG_HS256: result = Val_int(1); break;
+        case JWT_ALG_HS384: result = Val_int(2); break;
+        case JWT_ALG_HS512: result = Val_int(3); break;
+        case JWT_ALG_RS256: result = Val_int(4); break;
+        case JWT_ALG_RS384: result = Val_int(5); break;
+        case JWT_ALG_RS512: result = Val_int(6); break;
+        case JWT_ALG_ES256: result = Val_int(7); break;
+        case JWT_ALG_ES384: result = Val_int(8); break;
+        case JWT_ALG_ES512: result = Val_int(9); break;
+        case JWT_ALG_TERM: result = Val_int(10); break;
+    }
+    CAMLreturn(result);
+}
+
+
+CAMLprim value ocaml_jwt_del_grant(value ml_t, value key) {
+    CAMLparam2(ml_t, key);
+
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+    int err_code = jwt_del_grants(t, String_val(key));
+
+    if (err_code != 0) {
+        ocaml_jwt_raise(__FUNCTION__, err_code);
+    }
+    CAMLreturn(Val_unit);
+}
+
+CAMLprim value ocaml_jwt_del_grants(value ml_t) {
+    CAMLparam1(ml_t);
+
+    jwt_t *t = unwrap_ocaml_jwt(ml_t);
+    int err_code = jwt_del_grants(t, NULL);
+
     if (err_code != 0) {
         ocaml_jwt_raise(__FUNCTION__, err_code);
     }

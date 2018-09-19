@@ -1,0 +1,8 @@
+(executable
+ (name test_jwt_c)
+ (libraries jwt_c unix))
+
+(alias
+ (name runtest)
+ (deps (:test test_jwt_c.exe))
+ (action (run %{test})))

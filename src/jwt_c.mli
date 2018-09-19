@@ -6,18 +6,17 @@ val create : unit -> t
 val decode : ?key: string -> string -> t
 
 val get_grant : t -> string -> string option
-val get_grant_int : t -> string -> int
-val get_grant_bool : t -> string -> bool
-(* val get_grants_json : t -> string -> string option *)
+val get_grant_int : t -> string -> int option
+val get_grant_bool : t -> string -> bool option
+val get_grants_json : ?key: string -> t -> string option
+
 val add_grant : t -> string -> string -> unit
 val add_grant_int : t -> string -> int -> unit
 val add_grant_bool : t -> string -> bool -> unit
-(* val add_grants_json : t -> string -> unit *)
+val add_grants_json : t -> string -> unit
 
-(*
-val del_grants : t -> [ `Ok | `Error of int ]
-val del_grant : t -> string -> [ `Ok | `Error of int ]
-*)
+val del_grant : t -> string -> unit
+val del_grants : t -> unit
 
 val dump : ?pretty: bool -> t -> string
 val encode : t -> string
@@ -36,4 +35,4 @@ type algorithm =
   | TERM
 
 val set_alg : ?key: string -> t -> algorithm -> unit
-(* val get_alg : t -> jwt_alg *)
+val get_alg : t -> algorithm

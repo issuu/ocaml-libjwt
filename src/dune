@@ -1,0 +1,6 @@
+(library
+  (name jwt_c)
+  (public_name jwt_c)
+  (c_names stubs)
+  (c_flags -MJstubs.o.json)
+  (c_library_flags -ljwt))

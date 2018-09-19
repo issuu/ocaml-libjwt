@@ -1,6 +1,4 @@
-open Lwt.Infix
-open Cohttp
-open Cohttp_lwt_unix
+module Jwt = Jwt_c
 
 (* the key is just something I generated with `openssl genrsa -out private.pem 2048` *)
 let private_key = "-----BEGIN RSA PRIVATE KEY-----
@@ -53,10 +51,16 @@ let () =
   Jwt.add_grant_int jwt "iat" now;
   Printf.printf "%s\n" @@ Jwt.dump ~pretty:true jwt;
   Printf.printf "%s\n" (Jwt.get_grant jwt "iss" |> function Some s -> s | None -> "<None>");
-  Printf.printf "%d\n" @@ Jwt.get_grant_int jwt "iat";
+  Printf.printf "%s\n" (Jwt.get_grant_int jwt "iat" |> function Some i -> string_of_int i | None -> "<None>");
   let jwt_encoded = Jwt.encode jwt in
   Printf.printf "\n\nEncoded:\n%s\n" jwt_encoded;
   Printf.printf "DECODED JWT: %s\n" (Jwt.dump ~pretty:true @@ Jwt.decode jwt_encoded ~key:public_key);
+
+  Printf.printf "%s\n" ((Jwt.get_grants_json ~key:"scope" jwt) |> function Some s -> s | None -> "<None>");
+  Printf.printf "%s\n" ((Jwt.get_grants_json jwt) |> function Some s -> s | None -> "<None>");
+
+  Printf.printf "%b\n" @@ ((Jwt.get_alg jwt) = RS256);
+
   Gc.full_major ();
   Printf.printf "DONE!\n"
 
@@ -71,6 +75,7 @@ let create_google_auth_payload ~key ~client_id =
   Jwt.add_grant_int jwt "iat" now;
   Jwt.encode jwt
 
+(*
 let authenticate_with_google ~private_key ~client_email =
   let assertion = create_google_auth_payload ~key:private_key ~client_id:client_email in
   let headers = Header.init_with "content-type" "application/x-www-form-urlencoded" in
@@ -86,7 +91,6 @@ let authenticate_with_google ~private_key ~client_email =
   Printf.printf "Body of length: %d\n" (String.length body);
   Printf.printf "Body: %s\n" body
 
-(*
 let () =
   Lwt_main.run (authenticate_with_google
     ~private_key:"-----BEGIN PRIVATE KEY-----\n[INSERT REAL KEY HERE]\n-----END PRIVATE KEY-----"
