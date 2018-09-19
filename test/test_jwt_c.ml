@@ -55,6 +55,12 @@ let () =
   let jwt_encoded = Jwt.encode jwt in
   Printf.printf "\n\nEncoded:\n%s\n" jwt_encoded;
   Printf.printf "DECODED JWT: %s\n" (Jwt.dump ~pretty:true @@ Jwt.decode jwt_encoded ~key:public_key);
+
+  Printf.printf "%s\n" ((Jwt.get_grants_json ~key:"scope" jwt) |> function Some s -> s | None -> "<None>");
+  Printf.printf "%s\n" ((Jwt.get_grants_json jwt) |> function Some s -> s | None -> "<None>");
+
+  Printf.printf "%b\n" @@ ((Jwt.get_alg jwt) = RS256);
+
   Gc.full_major ();
   Printf.printf "DONE!\n"
 

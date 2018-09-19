@@ -175,12 +175,19 @@ CAMLprim value ocaml_jwt_get_grant_bool(value ml_t, value key) {
     CAMLreturn(Val_bool(i));
 }
 
-CAMLprim value ocaml_jwt_get_grants_json(value ml_t, value key) {
+CAMLprim value ocaml_jwt_get_grants_json(value key, value ml_t) {
     CAMLparam2(ml_t, key);
     CAMLlocal1(result);
 
     jwt_t *t = unwrap_ocaml_jwt(ml_t);
-    char *s = jwt_get_grants_json(t, String_val(key));
+    char *s;
+
+    if (key == Val_none) {
+        s = jwt_get_grants_json(t, NULL);
+    } else {
+        value field = Field(key, 0);
+        s = jwt_get_grants_json(t, String_val(field));
+    }
 
     if (s == NULL) {
         result = Val_none;
