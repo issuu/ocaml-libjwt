@@ -10,3 +10,8 @@ depends: [
   "dune" {build}
   "alcotest" {test}
 ]
+depexts: [
+  "libjwt-dev" {os-distribution = "debian" & os-version >= "10"}
+  "libjwt-dev" {os-distribution = "ubuntu" & os-version >= "17.10"}
+  "libjwt" {os-distribution = "homebrew"}
+]
