@@ -1,6 +1,7 @@
 (executable
  (name test_jwt_c)
- (libraries jwt_c alcotest))
+ (libraries jwt_c alcotest)
+ (preprocess (pps ppx_deriving.eq ppx_deriving.show)))
 
 (alias
  (name runtest)
