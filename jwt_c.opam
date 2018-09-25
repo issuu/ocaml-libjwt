@@ -9,6 +9,7 @@ build: [["jbuilder" "build" "-p" name "-j" jobs]]
 depends: [
   "dune" {build}
   "alcotest" {test}
+  "ppx_deriving" {test}
 ]
 depexts: [
   ["libjwt-dev"] {os-distribution = "debian"}
