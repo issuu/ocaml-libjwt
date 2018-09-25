@@ -1,5 +1,9 @@
 module Jwt = Jwt_c
 
+type error = [ `Jwt_error of string * int ] [@@deriving eq, show]
+
+let error = Alcotest.testable pp_error equal_error
+
 (* the key is just something I generated with `openssl genrsa -out private.pem 2048` *)
 let private_key = "-----BEGIN RSA PRIVATE KEY-----
 MIIEpQIBAAKCAQEA2EobPLULbXZNI9GBoXvX2X4Yplh4KIhDBWd33ll4id+Wsw6/
@@ -40,74 +44,106 @@ VQIDAQAB
 -----END PUBLIC KEY-----"
 
 let get_set_grant_string () =
-  let jwt = Jwt.create () in
-  Alcotest.(check (option string)) "non-existing" None (Jwt.get_grant jwt "non-existing");
-  Jwt.add_grant jwt "abc" "efg";
-  Alcotest.(check (option string)) "existing" (Some "efg") (Jwt.get_grant jwt "abc");
-  Gc.full_major ()
+  match Jwt.create () with
+  | Ok jwt ->
+    Alcotest.(check (option string)) "non-existing" None (Jwt.get_grant jwt "non-existing");
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grant jwt "abc" "efg"));
+    Alcotest.(check (option string)) "existing" (Some "efg") (Jwt.get_grant jwt "abc");
+    Gc.full_major ()
+  | Error _ ->
+    Alcotest.fail "Unable to create JWT"
 
 let get_set_grant_int () =
-  let jwt = Jwt.create () in
-  Alcotest.(check (option int)) "non-existing" None (Jwt.get_grant_int jwt "non-existing");
-  Jwt.add_grant_int jwt "n" 42;
-  Alcotest.(check (option int)) "existing" (Some 42) (Jwt.get_grant_int jwt "n");
-  Jwt.add_grant_int jwt "zero" 0;
-  Alcotest.(check (option int)) "zero" (Some 0) (Jwt.get_grant_int jwt "zero");
-  Gc.full_major ()
+  match Jwt.create () with
+  | Ok jwt ->
+    Alcotest.(check (option int)) "non-existing" None (Jwt.get_grant_int jwt "non-existing");
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grant_int jwt "n" 42));
+    Alcotest.(check (option int)) "existing" (Some 42) (Jwt.get_grant_int jwt "n");
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grant_int jwt "zero" 0));
+    Alcotest.(check (option int)) "zero" (Some 0) (Jwt.get_grant_int jwt "zero");
+    Gc.full_major ()
+  | Error _ ->
+    Alcotest.fail "Unable to create JWT"
 
 let get_set_grant_bool () =
-  let jwt = Jwt.create () in
-  Alcotest.(check (option bool)) "non-existing" None (Jwt.get_grant_bool jwt "non-existing");
-  Jwt.add_grant_bool jwt "true" true;
-  Alcotest.(check (option bool)) "true" (Some true) (Jwt.get_grant_bool jwt "true");
-  Jwt.add_grant_bool jwt "false" false;
-  Alcotest.(check (option bool)) "false" (Some false) (Jwt.get_grant_bool jwt "false");
-  Gc.full_major ()
+  match Jwt.create () with
+  | Ok jwt ->
+    Alcotest.(check (option bool)) "non-existing" None (Jwt.get_grant_bool jwt "non-existing");
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grant_bool jwt "true" true));
+    Alcotest.(check (option bool)) "true" (Some true) (Jwt.get_grant_bool jwt "true");
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grant_bool jwt "false" false));
+    Alcotest.(check (option bool)) "false" (Some false) (Jwt.get_grant_bool jwt "false");
+    Gc.full_major ()
+  | Error _ ->
+    Alcotest.fail "Unable to create JWT"
 
 let get_json () =
-  let jwt = Jwt.create () in
-  Jwt.add_grant jwt "abc" "efg";
-  Jwt.add_grant_int jwt "n" 42;
-  Jwt.add_grant_bool jwt "b" true;
-  Alcotest.(check (option string)) "json" (Some {json|{"abc":"efg","b":true,"n":42}|json}) (Jwt.get_grants_json jwt);
-  Alcotest.(check (option string)) "with key" (Some {json|"efg"|json}) (Jwt.get_grants_json ~key:"abc" jwt);
-  Alcotest.(check (option string)) "non-existing" None (Jwt.get_grants_json ~key:"non-existing" jwt);
-  Gc.full_major ()
+  match Jwt.create () with
+  | Ok jwt ->
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grant jwt "abc" "efg"));
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grant_int jwt "n" 42));
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grant_bool jwt "b" true));
+    Alcotest.(check (option string)) "json" (Some {json|{"abc":"efg","b":true,"n":42}|json}) (Jwt.get_grants_json jwt);
+    Alcotest.(check (option string)) "with key" (Some {json|"efg"|json}) (Jwt.get_grants_json ~key:"abc" jwt);
+    Alcotest.(check (option string)) "non-existing" None (Jwt.get_grants_json ~key:"non-existing" jwt);
+    Gc.full_major ()
+  | Error _ ->
+    Alcotest.fail "Unable to create JWT"
 
 let set_json () =
-  let jwt = Jwt.create () in
-  Jwt.add_grants_json jwt {json|{"abc":"efg","b":true,"n":42}|json};
-  Alcotest.(check (option string)) "json" (Some {json|{"abc":"efg","b":true,"n":42}|json}) (Jwt.get_grants_json jwt);
-  Alcotest.(check (option string)) "get grant" (Some "efg") (Jwt.get_grant jwt "abc");
-  Gc.full_major ()
+  match Jwt.create () with
+  | Ok jwt ->
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grants_json jwt {json|{"abc":"efg","b":true,"n":42}|json}));
+    Alcotest.(check (option string)) "json" (Some {json|{"abc":"efg","b":true,"n":42}|json}) (Jwt.get_grants_json jwt);
+    Alcotest.(check (option string)) "get grant" (Some "efg") (Jwt.get_grant jwt "abc");
+    Gc.full_major ()
+  | Error _ ->
+    Alcotest.fail "Unable to create JWT"
 
 let delete_grant () =
-  let jwt = Jwt.create () in
-  Jwt.add_grants_json jwt {json|{"abc":"efg","b":true,"n":42}|json};
-  Jwt.del_grant jwt "abc";
-  Alcotest.(check (option string)) "json" (Some {json|{"b":true,"n":42}|json}) (Jwt.get_grants_json jwt);
-  Gc.full_major ()
+  match Jwt.create () with
+  | Ok jwt ->
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grants_json jwt {json|{"abc":"efg","b":true,"n":42}|json}));
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.del_grant jwt "abc"));
+    Alcotest.(check (option string)) "json" (Some {json|{"b":true,"n":42}|json}) (Jwt.get_grants_json jwt);
+    Gc.full_major ()
+  | Error _ ->
+    Alcotest.fail "Unable to create JWT"
 
 let delete_all_grants () =
-  let jwt = Jwt.create () in
-  Jwt.add_grants_json jwt {json|{"abc":"efg","b":true,"n":42}|json};
-  Jwt.del_grants jwt;
-  Alcotest.(check (option string)) "json" (Some "{}") (Jwt.get_grants_json jwt);
-  Gc.full_major ()
+  match Jwt.create () with
+  | Ok jwt ->
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grants_json jwt {json|{"abc":"efg","b":true,"n":42}|json}));
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.del_grants jwt));
+    Alcotest.(check (option string)) "json" (Some "{}") (Jwt.get_grants_json jwt);
+    Gc.full_major ()
+  | Error _ ->
+    Alcotest.fail "Unable to create JWT"
 
 let decode_encode () =
-  let jwt = Jwt.create () in
-  let now = Unix.time () |> int_of_float in
-  Jwt.set_alg jwt RS256 ~key:private_key;
-  Jwt.add_grant jwt "iss" "https://www.googleapis.com/robot/v1/metadata/x509/recommendation-tracking%40recommendation-tracking.iam.gserviceaccount.com";
-  Jwt.add_grant jwt "scope" "https://www.googleapis.com/auth/prediction";
-  Jwt.add_grant jwt "aud" "https://www.googleapis.com/oauth2/v4/token";
-  Jwt.add_grant_int jwt "exp" (now + 3600);
-  Jwt.add_grant_int jwt "iat" now;
-  let jwt_encoded = Jwt.encode jwt in
-  let jwt_decoded = Jwt.decode jwt_encoded ~key:public_key in
-  Alcotest.(check (option string)) "json" (Jwt.get_grants_json jwt) (Jwt.get_grants_json jwt_decoded);
-  Gc.full_major ()
+  match Jwt.create () with
+  | Ok jwt ->
+    let now = Unix.time () |> int_of_float in
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.set_alg jwt RS256 ~key:private_key));
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grant jwt "iss" "https://www.googleapis.com/robot/v1/metadata/x509/recommendation-tracking%40recommendation-tracking.iam.gserviceaccount.com"));
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grant jwt "scope" "https://www.googleapis.com/auth/prediction"));
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grant jwt "aud" "https://www.googleapis.com/oauth2/v4/token"));
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grant_int jwt "exp" (now + 3600)));
+    Alcotest.(check (result unit error) "grant-added" (Ok ()) (Jwt.add_grant_int jwt "iat" now));
+    begin match Jwt.encode jwt with
+      | Ok jwt_encoded ->
+        begin match Jwt.decode jwt_encoded ~key:public_key with
+        | Ok jwt_decoded ->
+          Alcotest.(check (option string)) "json" (Jwt.get_grants_json jwt) (Jwt.get_grants_json jwt_decoded);
+          Gc.full_major ()
+        | Error _ ->
+          Alcotest.fail "Unable to decode JWT"
+        end
+      | Error _ ->
+        Alcotest.fail "Unable to encode JWT"
+    end
+  | Error _ ->
+    Alcotest.fail "Unable to create JWT"
 
 let () =
   Alcotest.run "Jwt_C" [
