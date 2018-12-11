@@ -1,6 +1,6 @@
 module Jwt = Jwt_c
 
-type error = [ `Jwt_error of string * int ] [@@deriving eq, show]
+type error = [ `Jwt_error of int ] [@@deriving eq, show]
 
 let error = Alcotest.testable pp_error equal_error
 
