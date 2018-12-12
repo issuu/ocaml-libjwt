@@ -1,15 +1,20 @@
 opam-version: "2.0"
 maintainer: "Team Raccoons <racoon@issuu.com>"
 author: "Team Raccoon"
+synopsis: "OCaml bindings for libjwt"
+description: "OCaml bindings for libjwt (https://github.com/benmcollins/libjwt)"
 homepage: "https://github.com/issuu/ocaml-libjwt"
 doc: "https://issuu.github.io/ocaml-libjwt/"
 dev-repo: "git+https://github.com/issuu/ocaml-libjwt.git"
 bug-reports: "https://github.com/issuu/ocaml-libjwt/issues"
-build: [["jbuilder" "build" "-p" name "-j" jobs]]
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
+]
 depends: [
   "dune" {build}
-  "alcotest" {test}
-  "ppx_deriving" {test}
+  "alcotest" {with-test}
+  "ppx_deriving" {with-test}
 ]
 depexts: [
   ["libjwt-dev"] {os-distribution = "debian"}
