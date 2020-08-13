@@ -1,2 +1,16 @@
-(lang dune 1.1)
+(lang dune 1.11)
 (name jwt_c)
+(generate_opam_files true)
+(maintainers "Team Raccoons <racoon@issuu.com>")
+(authors "Team Raccoon")
+(homepage "https://github.com/issuu/ocaml-libjwt")
+(documentation "https://issuu.github.io/ocaml-libjwt/")
+(source (github issuu/ocaml-libjwt))
+(bug_reports "https://github.com/issuu/ocaml-libjwt/issues")
+(package 
+ (name jwt_c)
+ (depends 
+  (dune (>= 1.11))
+  (alcotest :with-test)
+  (ppx_deriving :with-test))
+ (synopsis "Bindings to libjwt"))
