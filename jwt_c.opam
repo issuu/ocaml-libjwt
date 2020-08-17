@@ -2,7 +2,7 @@
 opam-version: "2.0"
 synopsis: "Bindings to libjwt"
 description:
-  "Ocaml bindings for libjwt (https://github.com/benmcollins/libjwt)"
+  "OCaml bindings for libjwt (https://github.com/benmcollins/libjwt)"
 maintainer: ["Team Raccoons <racoon@issuu.com>"]
 authors: ["Team Raccoon"]
 homepage: "https://github.com/issuu/ocaml-libjwt"
