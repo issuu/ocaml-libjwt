@@ -1,3 +1,5 @@
+0.4
+===
 * Fully switch from JBuilder to dune
 * Generate .opam file using dune (requires dune >= 1.11)
 
