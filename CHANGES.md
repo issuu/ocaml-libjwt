@@ -1,3 +1,6 @@
+* Fully switch from JBuilder to dune
+* Generate .opam file using dune (requires dune >= 1.11)
+
 0.3
 ===
 * All functions that previously may have raised

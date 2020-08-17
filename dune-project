@@ -7,9 +7,9 @@
 (documentation "https://issuu.github.io/ocaml-libjwt/")
 (source (github issuu/ocaml-libjwt))
 (bug_reports "https://github.com/issuu/ocaml-libjwt/issues")
-(package 
+(package
  (name jwt_c)
- (depends 
+ (depends
   (dune (>= 1.11))
   (alcotest :with-test)
   (ppx_deriving :with-test))
