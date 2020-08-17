@@ -13,4 +13,5 @@
   (dune (>= 1.11))
   (alcotest :with-test)
   (ppx_deriving :with-test))
- (synopsis "Bindings to libjwt"))
+ (synopsis "Bindings to libjwt")
+ (description "OCaml bindings for libjwt (https://github.com/benmcollins/libjwt)"))
